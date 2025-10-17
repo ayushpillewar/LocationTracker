@@ -4,19 +4,27 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="81e9d450-ffed-4bbe-bd02-02704fc6c0c1" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/App.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/AndroidManifest.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/LocationTrackingService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/build.gradle" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/LocationTrackerScreen.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/ParentalLockScreen.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/LocationService.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/constants.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/permissions.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/validation.js" beforeDir="false" />
+    <list default="true" id="81e9d450-ffed-4bbe-bd02-02704fc6c0c1" name="Changes" comment="working app">
+      <change afterPath="$PROJECT_DIR$/app.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LocationTracker/app/(tabs)/_layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/LocationTracker/app/(tabs)/_layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LocationTracker/app/(tabs)/explore.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/LocationTracker/app/(tabs)/explore.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LocationTracker/app/(tabs)/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/LocationTracker/app/(tabs)/index.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LocationTracker/app/_layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/LocationTracker/app/_layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LocationTracker/assets/images/android-icon-background.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LocationTracker/assets/images/android-icon-foreground.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LocationTracker/assets/images/android-icon-monochrome.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LocationTracker/assets/images/favicon.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LocationTracker/assets/images/icon.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LocationTracker/assets/images/partial-react-logo.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LocationTracker/assets/images/react-logo.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LocationTracker/assets/images/react-logo@2x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LocationTracker/assets/images/react-logo@3x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LocationTracker/assets/images/splash-icon.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LocationTracker/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/LocationTracker/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LocationTracker/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/LocationTracker/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LocationTracker/tsconfig.json" beforeDir="false" afterPath="$PROJECT_DIR$/LocationTracker/tsconfig.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -59,6 +67,19 @@
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;
   }
 }</component>
+  <component name="RunManager">
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="LocationTracker" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="LocationTracker" />
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -74,6 +95,19 @@
       <option name="presentableId" value="Default" />
       <updated>1760682138709</updated>
     </task>
+    <task id="LOCAL-00001" summary="working app">
+      <option name="closed" value="true" />
+      <created>1760702288152</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1760702288152</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="working app" />
+    <option name="LAST_COMMIT_MESSAGE" value="working app" />
   </component>
 </project>

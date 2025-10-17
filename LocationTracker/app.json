@@ -9,7 +9,12 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app needs location access to send location updates to emergency contacts.",
+        "NSLocationWhenInUseUsageDescription": "This app needs location access to send location updates to emergency contacts.",
+        "NSContactsUsageDescription": "This app needs access to contacts to select emergency contacts."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +24,16 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "READ_CONTACTS",
+        "SEND_SMS",
+        "FOREGROUND_SERVICE",
+        "WAKE_LOCK"
+      ]
     },
     "web": {
       "output": "static",
@@ -27,6 +41,23 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow LocationTracker to use your location to send updates to emergency contacts.",
+          "locationAlwaysPermission": "Allow LocationTracker to use your location in the background to send automatic updates to emergency contacts.",
+          "locationWhenInUsePermission": "Allow LocationTracker to use your location when the app is in use.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ],
+      "expo-task-manager",
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Allow LocationTracker to access your contacts to select emergency contacts."
+        }
+      ],
       [
         "expo-splash-screen",
         {
