@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, Alert, FlatList, Platform, PermissionsAndroid } from 'react-native';
+import { View, ScrollView, Alert, FlatList, Platform, PermissionsAndroid, TouchableOpacity } from 'react-native';
 import { 
   Card, 
   Title, 
@@ -31,6 +31,7 @@ const PREDEFINED_INTERVALS = [5, 10, 15, 30, 60, 120]; // minutes
 const PIN_STORAGE_KEY = 'parental_pin';
 
 export default function ExploreScreen() {
+  const [activeTab, setActiveTab] = useState<'home' | 'cloud'>('home');
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [selectedInterval, setSelectedInterval] = useState<number>(15);
   const [customInterval, setCustomInterval] = useState<string>('');
@@ -46,9 +47,15 @@ export default function ExploreScreen() {
   useEffect(() => {
     loadContacts();
     checkServiceStatus();
-    loadStoredConfig();
     requestSMSPermissions();
   }, []);
+
+  // Load stored config after contacts are loaded
+  useEffect(() => {
+    if (contacts.length > 0) {
+      loadStoredConfig();
+    }
+  }, [contacts]);
 
   const requestSMSPermissions = async () => {
     if (Platform.OS === 'android') {
@@ -79,11 +86,17 @@ export default function ExploreScreen() {
 
   const loadContacts = async () => {
     try {
+      console.log('Requesting contacts permission...');
       const { status } = await Contacts.requestPermissionsAsync();
+      console.log('Contacts permission status:', status);
+      
       if (status === 'granted') {
+        console.log('Loading contacts...');
         const { data } = await Contacts.getContactsAsync({
           fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
         });
+
+        console.log('Raw contacts loaded:', data.length);
 
         const formattedContacts: Contact[] = data
           .filter(contact => contact.phoneNumbers && contact.phoneNumbers.length > 0)
@@ -96,7 +109,11 @@ export default function ExploreScreen() {
             }))
           }));
 
+        console.log('Formatted contacts with phone numbers:', formattedContacts.length);
         setContacts(formattedContacts);
+      } else {
+        console.log('Contacts permission denied');
+        Alert.alert('Permission Required', 'Please grant contacts permission to select emergency contacts');
       }
     } catch (error) {
       console.error('Error loading contacts:', error);
@@ -284,16 +301,24 @@ This is a test message. Automatic updates will be sent every ${interval} minutes
     contact.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  console.log('Total contacts:', contacts.length);
+  console.log('Filtered contacts:', filteredContacts.length);
+  console.log('Search query:', searchQuery);
+
   const renderContact = ({ item }: { item: Contact }) => (
     <List.Item
       title={item.name}
-      description={item.phoneNumbers?.[0]?.number || 'No phone number'}
-      left={props => <List.Icon {...props} icon="account" />}
+      description={`${item.phoneNumbers?.[0]?.number || 'No phone number'}${item.phoneNumbers?.[0]?.label ? ` (${item.phoneNumbers[0].label})` : ''}`}
+      left={props => <List.Icon {...props} icon="account-circle" />}
+      right={props => <List.Icon {...props} icon="chevron-right" />}
       onPress={() => {
         setSelectedContact(item);
         setContactModalVisible(false);
+        setSearchQuery(''); // Clear search when contact is selected
       }}
       style={styles.contactItem}
+      titleStyle={{ fontSize: 16, fontWeight: '600' }}
+      descriptionStyle={{ fontSize: 14, color: '#666' }}
     />
   );
 
@@ -311,227 +336,354 @@ This is a test message. Automatic updates will be sent every ${interval} minutes
     </Chip>
   );
 
+  const renderHomeContent = () => (
+    <ScrollView contentContainerStyle={{ padding: 16 }}>
+      {/* Status Card */}
+      <Card style={styles.statusCard}>
+        <Card.Content>
+          <Title>Location Tracking Status</Title>
+          <Paragraph>
+            {isServiceActive ? '🟢 Active - Sending automatic SMS updates' : '🔴 Inactive'}
+          </Paragraph>
+          {selectedContact && (
+            <Paragraph>
+              Sending to: {selectedContact.name} ({selectedContact.phoneNumbers?.[0]?.number})
+            </Paragraph>
+          )}
+          {isServiceActive && (
+            <Paragraph style={{ fontSize: 12, marginTop: 8, color: '#666' }}>
+              SMS messages are sent automatically in the background without opening the SMS app.
+            </Paragraph>
+          )}
+        </Card.Content>
+      </Card>
+
+      {/* Information Card */}
+      <Card style={{ 
+        marginBottom: 24, 
+        backgroundColor: '#f0f9ff', 
+        borderWidth: 1.5, 
+        borderColor: '#0ea5e9', 
+        borderRadius: 18,
+        elevation: 3,
+        shadowColor: '#0ea5e9',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8
+      }}>
+        <Card.Content>
+          <Title style={{ color: '#0ea5e9', fontWeight: '700', fontSize: 18 }}>📱 Automatic SMS Feature</Title>
+          <Paragraph style={{ fontSize: 13, lineHeight: 18 }}>
+            • SMS messages are sent automatically without user interaction{'\n'}
+            • Messages include Google Maps links for easy location viewing{'\n'}
+            • Works completely in the background when app is closed{'\n'}
+            • Test SMS available before starting tracking{'\n'}
+            • Requires SMS permissions on Android devices
+          </Paragraph>
+        </Card.Content>
+      </Card>
+
+      {/* Contact Selection */}
+      <Card style={styles.contactSection}>
+        <Card.Content>
+          <Title>Select Emergency Contact</Title>
+          {selectedContact ? (
+            <Card style={styles.selectedContactCard}>
+              <Card.Content>
+                <Paragraph>Selected: {selectedContact.name}</Paragraph>
+                <Paragraph>{selectedContact.phoneNumbers?.[0]?.number}</Paragraph>
+              </Card.Content>
+            </Card>
+          ) : (
+            <Paragraph>No contact selected</Paragraph>
+          )}
+          <Button
+            mode="outlined"
+            onPress={() => setContactModalVisible(true)}
+            style={styles.selectContactButton}
+            icon="contacts"
+          >
+            {selectedContact ? 'Change Contact' : 'Select Contact'}
+          </Button>
+        </Card.Content>
+      </Card>
+
+      <Divider style={styles.divider} />
+
+      {/* Time Interval Selection */}
+      <Card style={styles.intervalSection}>
+        <Card.Content>
+          <Title style={styles.sectionTitle}>Update Interval</Title>
+          <Paragraph>Choose how often to send location updates:</Paragraph>
+          
+          <View style={styles.intervalButtons}>
+            {PREDEFINED_INTERVALS.map(renderIntervalButton)}
+          </View>
+
+          <TextInput
+            style={styles.customIntervalInput}
+            mode="outlined"
+            label="Custom interval (minutes)"
+            value={customInterval}
+            onChangeText={setCustomInterval}
+            keyboardType="numeric"
+            placeholder="Enter custom minutes"
+          />
+        </Card.Content>
+      </Card>
+
+      {/* Control Buttons */}
+      <View style={styles.buttonContainer}>
+        <Button
+          mode="contained"
+          onPress={handleStartService}
+          disabled={isServiceActive}
+          style={[styles.button, styles.startButton]}
+          icon="play"
+        >
+          Start Tracking
+        </Button>
+
+        <Button
+          mode="contained"
+          onPress={handleStopService}
+          disabled={!isServiceActive}
+          style={[styles.button, styles.stopButton]}
+          icon="stop"
+        >
+          Stop Tracking
+        </Button>
+      </View>
+
+      {/* PIN Update Section */}
+      <Card style={{ marginTop: 20, marginBottom: 100 }}>
+        <Card.Content>
+          <Title>Security Settings</Title>
+          <Button
+            mode="outlined"
+            onPress={() => setPinModalVisible(true)}
+            style={{ marginTop: 10 }}
+            icon="lock"
+          >
+            Update Parental PIN
+          </Button>
+        </Card.Content>
+      </Card>
+    </ScrollView>
+  );
+
+  const renderCloudContent = () => (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
+      <Card style={{ 
+        width: '100%', 
+        backgroundColor: '#f0f9ff', 
+        borderWidth: 1.5, 
+        borderColor: '#0ea5e9',
+        borderRadius: 20,
+        elevation: 4,
+        shadowColor: '#0ea5e9',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12
+      }}>
+        <Card.Content style={{ alignItems: 'center', padding: 40 }}>
+          <View style={{ backgroundColor: '#bae6fd', borderRadius: 50, padding: 24, marginBottom: 24 }}>
+            <IconButton icon="cloud" size={48} iconColor="#0ea5e9" />
+          </View>
+          <Title style={{ color: '#0ea5e9', textAlign: 'center', marginBottom: 16, fontWeight: '700', fontSize: 24 }}>
+            Cloud Sync
+          </Title>
+          <Paragraph style={{ textAlign: 'center', fontSize: 16, lineHeight: 24, color: '#475569', fontWeight: '500' }}>
+            Cloud synchronization and backup features will be available soon!
+          </Paragraph>
+          <Paragraph style={{ textAlign: 'center', fontSize: 14, marginTop: 20, color: '#94a3b8', fontWeight: '400' }}>
+            Stay tuned for updates 🚀
+          </Paragraph>
+        </Card.Content>
+      </Card>
+    </View>
+  );
+
   return (
     <ThemedView style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
-        
-        {/* Status Card */}
-        <Card style={styles.statusCard}>
-          <Card.Content>
-            <Title>Location Tracking Status</Title>
-            <Paragraph>
-              {isServiceActive ? '🟢 Active - Sending automatic SMS updates' : '🔴 Inactive'}
-            </Paragraph>
-            {selectedContact && (
-              <Paragraph>
-                Sending to: {selectedContact.name} ({selectedContact.phoneNumbers?.[0]?.number})
-              </Paragraph>
-            )}
-            {isServiceActive && (
-              <Paragraph style={{ fontSize: 12, marginTop: 8, color: '#666' }}>
-                SMS messages are sent automatically in the background without opening the SMS app.
-              </Paragraph>
-            )}
-          </Card.Content>
-        </Card>
+      {/* Main Content */}
+      <View style={{ flex: 1 }}>
+        {activeTab === 'home' ? renderHomeContent() : renderCloudContent()}
+      </View>
 
-        {/* Information Card */}
-        <Card style={{ marginBottom: 16, backgroundColor: 'rgba(59, 130, 246, 0.1)', borderWidth: 1, borderColor: 'rgba(59, 130, 246, 0.2)' }}>
-          <Card.Content>
-            <Title style={{ color: '#3b82f6' }}>📱 Automatic SMS Feature</Title>
-            <Paragraph style={{ fontSize: 13, lineHeight: 18 }}>
-              • SMS messages are sent automatically without user interaction{'\n'}
-              • Messages include Google Maps links for easy location viewing{'\n'}
-              • Works completely in the background when app is closed{'\n'}
-              • Test SMS available before starting tracking{'\n'}
-              • Requires SMS permissions on Android devices
-            </Paragraph>
-          </Card.Content>
-        </Card>
+      {/* Bottom Navigation */}
+      <View style={styles.bottomNav}>
+        <TouchableOpacity
+          style={[styles.tabButton, activeTab === 'home' && styles.activeTab]}
+          onPress={() => setActiveTab('home')}
+        >
+          <IconButton 
+            icon="home" 
+            size={24} 
+            iconColor={activeTab === 'home' ? '#4f46e5' : '#6b7280'} 
+          />
+          <ThemedText style={[styles.tabText, activeTab === 'home' && styles.activeTabText]}>
+            Home
+          </ThemedText>
+        </TouchableOpacity>
 
-        {/* Contact Selection */}
-        <Card style={styles.contactSection}>
-          <Card.Content>
-            <Title>Select Emergency Contact</Title>
-            {selectedContact ? (
-              <Card style={styles.selectedContactCard}>
-                <Card.Content>
-                  <Paragraph>Selected: {selectedContact.name}</Paragraph>
-                  <Paragraph>{selectedContact.phoneNumbers?.[0]?.number}</Paragraph>
-                </Card.Content>
-              </Card>
-            ) : (
-              <Paragraph>No contact selected</Paragraph>
-            )}
-            <Button
-              mode="outlined"
-              onPress={() => setContactModalVisible(true)}
-              style={styles.selectContactButton}
-              icon="contacts"
-            >
-              {selectedContact ? 'Change Contact' : 'Select Contact'}
-            </Button>
-          </Card.Content>
-        </Card>
+        <TouchableOpacity
+          style={[styles.tabButton, activeTab === 'cloud' && styles.activeTab]}
+          onPress={() => setActiveTab('cloud')}
+        >
+          <IconButton 
+            icon="cloud" 
+            size={24} 
+            iconColor={activeTab === 'cloud' ? '#4f46e5' : '#6b7280'} 
+          />
+          <ThemedText style={[styles.tabText, activeTab === 'cloud' && styles.activeTabText]}>
+            Cloud
+          </ThemedText>
+        </TouchableOpacity>
+      </View>
 
-        <Divider style={styles.divider} />
-
-        {/* Time Interval Selection */}
-        <Card style={styles.intervalSection}>
-          <Card.Content>
-            <Title style={styles.sectionTitle}>Update Interval</Title>
-            <Paragraph>Choose how often to send location updates:</Paragraph>
-            
-            <View style={styles.intervalButtons}>
-              {PREDEFINED_INTERVALS.map(renderIntervalButton)}
-            </View>
-
-            <TextInput
-              style={styles.customIntervalInput}
-              mode="outlined"
-              label="Custom interval (minutes)"
-              value={customInterval}
-              onChangeText={setCustomInterval}
-              keyboardType="numeric"
-              placeholder="Enter custom minutes"
-            />
-          </Card.Content>
-        </Card>
-
-        {/* Control Buttons */}
-        <View style={styles.buttonContainer}>
-          <Button
-            mode="contained"
-            onPress={handleStartService}
-            disabled={isServiceActive}
-            style={[styles.button, styles.startButton]}
-            icon="play"
-          >
-            Start Tracking
-          </Button>
-
-          <Button
-            mode="contained"
-            onPress={handleStopService}
-            disabled={!isServiceActive}
-            style={[styles.button, styles.stopButton]}
-            icon="stop"
-          >
-            Stop Tracking
-          </Button>
-        </View>
-
-        {/* PIN Update Section */}
-        <Card style={{ marginTop: 20 }}>
-          <Card.Content>
-            <Title>Security Settings</Title>
-            <Button
-              mode="outlined"
-              onPress={() => setPinModalVisible(true)}
-              style={{ marginTop: 10 }}
-              icon="lock"
-            >
-              Update Parental PIN
-            </Button>
-          </Card.Content>
-        </Card>
-
-        {/* Contact Selection Modal */}
-        <Portal>
-          <Modal
-            visible={contactModalVisible}
-            onDismiss={() => setContactModalVisible(false)}
-            contentContainerStyle={styles.modalContent}
-          >
-            <Card style={styles.modalCard}>
-              <Card.Content>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Title>Select Contact</Title>
+      {/* Contact Selection Modal */}
+      <Portal>
+        <Modal
+          visible={contactModalVisible}
+          onDismiss={() => setContactModalVisible(false)}
+          contentContainerStyle={styles.modalContent}
+        >
+          <Card style={styles.modalCard}>
+            <Card.Content style={{ flex: 1, padding: 16 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <Title style={{ fontSize: 20, fontWeight: 'bold' }}>Select Contact</Title>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Paragraph style={{ fontSize: 12, color: '#666', marginRight: 8 }}>
+                    {filteredContacts.length} of {contacts.length}
+                  </Paragraph>
                   <IconButton icon="close" onPress={() => setContactModalVisible(false)} />
                 </View>
-                
-                <TextInput
-                  style={styles.searchBar}
-                  mode="outlined"
-                  label="Search contacts"
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  left={<TextInput.Icon icon="magnify" />}
-                />
+              </View>
+              
+              <TextInput
+                style={styles.searchBar}
+                mode="outlined"
+                label="Search contacts"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                left={<TextInput.Icon icon="magnify" />}
+                right={searchQuery ? <TextInput.Icon icon="close" onPress={() => setSearchQuery('')} /> : undefined}
+              />
 
-                <FlatList
-                  data={filteredContacts}
-                  renderItem={renderContact}
-                  keyExtractor={item => item.id}
-                  style={styles.contactsList}
-                  showsVerticalScrollIndicator={false}
-                />
-              </Card.Content>
-            </Card>
-          </Modal>
-        </Portal>
-
-        {/* PIN Update Modal */}
-        <Portal>
-          <Modal
-            visible={pinModalVisible}
-            onDismiss={() => setPinModalVisible(false)}
-            contentContainerStyle={styles.modalContent}
-          >
-            <Card style={styles.modalCard}>
-              <Card.Content>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Title>Update PIN</Title>
-                  <IconButton icon="close" onPress={() => setPinModalVisible(false)} />
+              <View style={{ flex: 1 }}>
+                {filteredContacts.length > 0 ? (
+                  <FlatList
+                    data={filteredContacts}
+                    renderItem={renderContact}
+                    keyExtractor={item => item.id}
+                    style={styles.contactsList}
+                    showsVerticalScrollIndicator={true}
+                    contentContainerStyle={{ paddingBottom: 10 }}
+                  />
+                ) : (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <IconButton 
+                    icon={contacts.length === 0 ? "account-off" : "account-search"} 
+                    size={48} 
+                    iconColor="#9ca3af" 
+                    style={{ marginBottom: 10 }}
+                  />
+                  <Title style={{ textAlign: 'center', color: '#666', fontSize: 18, marginBottom: 8 }}>
+                    {contacts.length === 0 ? 'No Contacts Found' : 'No Matching Contacts'}
+                  </Title>
+                  <Paragraph style={{ textAlign: 'center', color: '#666', fontSize: 14, lineHeight: 20 }}>
+                    {contacts.length === 0 
+                      ? 'Please grant contacts permission and ensure you have contacts with phone numbers saved on your device.' 
+                      : `No contacts match "${searchQuery}". Try adjusting your search.`}
+                  </Paragraph>
+                  {contacts.length === 0 && (
+                    <Button
+                      mode="contained"
+                      onPress={loadContacts}
+                      style={{ marginTop: 16, backgroundColor: '#4f46e5' }}
+                      icon="refresh"
+                    >
+                      Reload Contacts
+                    </Button>
+                  )}
+                  {contacts.length > 0 && searchQuery && (
+                    <Button
+                      mode="outlined"
+                      onPress={() => setSearchQuery('')}
+                      style={{ marginTop: 16 }}
+                      icon="close"
+                    >
+                      Clear Search
+                    </Button>
+                  )}
                 </View>
+              )}
+              </View>
+            </Card.Content>
+          </Card>
+        </Modal>
+      </Portal>
 
-                <TextInput
-                  style={styles.input}
-                  mode="outlined"
-                  label="Current PIN"
-                  value={currentPin}
-                  onChangeText={setCurrentPin}
-                  keyboardType="numeric"
-                  maxLength={4}
-                  secureTextEntry
-                />
+      {/* PIN Update Modal */}
+      <Portal>
+        <Modal
+          visible={pinModalVisible}
+          onDismiss={() => setPinModalVisible(false)}
+          contentContainerStyle={styles.modalContent}
+        >
+          <Card style={styles.modalCard}>
+            <Card.Content>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Title>Update PIN</Title>
+                <IconButton icon="close" onPress={() => setPinModalVisible(false)} />
+              </View>
 
-                <TextInput
-                  style={styles.input}
-                  mode="outlined"
-                  label="New PIN"
-                  value={newPin}
-                  onChangeText={setNewPin}
-                  keyboardType="numeric"
-                  maxLength={4}
-                  secureTextEntry
-                />
+              <TextInput
+                style={styles.input}
+                mode="outlined"
+                label="Current PIN"
+                value={currentPin}
+                onChangeText={setCurrentPin}
+                keyboardType="numeric"
+                maxLength={4}
+                secureTextEntry
+              />
 
-                <TextInput
-                  style={styles.input}
-                  mode="outlined"
-                  label="Confirm New PIN"
-                  value={confirmPin}
-                  onChangeText={setConfirmPin}
-                  keyboardType="numeric"
-                  maxLength={4}
-                  secureTextEntry
-                />
+              <TextInput
+                style={styles.input}
+                mode="outlined"
+                label="New PIN"
+                value={newPin}
+                onChangeText={setNewPin}
+                keyboardType="numeric"
+                maxLength={4}
+                secureTextEntry
+              />
 
-                <Button
-                  mode="contained"
-                  onPress={handleUpdatePin}
-                  style={styles.button}
-                  disabled={!currentPin || !newPin || !confirmPin}
-                >
-                  Update PIN
-                </Button>
-              </Card.Content>
-            </Card>
-          </Modal>
-        </Portal>
+              <TextInput
+                style={styles.input}
+                mode="outlined"
+                label="Confirm New PIN"
+                value={confirmPin}
+                onChangeText={setConfirmPin}
+                keyboardType="numeric"
+                maxLength={4}
+                secureTextEntry
+              />
 
-      </ScrollView>
+              <Button
+                mode="contained"
+                onPress={handleUpdatePin}
+                style={styles.button}
+                disabled={!currentPin || !newPin || !confirmPin}
+              >
+                Update PIN
+              </Button>
+            </Card.Content>
+          </Card>
+        </Modal>
+      </Portal>
     </ThemedView>
   );
 }

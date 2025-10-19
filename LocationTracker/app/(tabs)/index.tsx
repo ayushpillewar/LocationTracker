@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TextInput, Button, Surface } from 'react-native-paper';
-import { styles } from './styles';
+import { styles } from './indexStyles';
 
 const DEFAULT_PIN = '1234'; // Default PIN for demonstration
 const PIN_STORAGE_KEY = 'parental_pin';
