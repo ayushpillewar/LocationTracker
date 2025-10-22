@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, Alert, FlatList, Platform, PermissionsAndroid, TouchableOpacity } from 'react-native';
+import { View, ScrollView, Alert, FlatList, Platform, PermissionsAndroid, TouchableOpacity, Animated } from 'react-native';
 import { 
   Card, 
   Title, 
@@ -322,19 +322,84 @@ This is a test message. Automatic updates will be sent every ${interval} minutes
     />
   );
 
-  const renderIntervalButton = (minutes: number) => (
-    <Chip
-      key={minutes}
-      selected={selectedInterval === minutes && !customInterval}
-      onPress={() => {
-        setSelectedInterval(minutes);
-        setCustomInterval('');
-      }}
-      style={styles.intervalButton}
-    >
-      {minutes < 60 ? `${minutes} min` : `${minutes / 60} hr`}
-    </Chip>
-  );
+  const renderIntervalSlider = () => {
+    const getIntervalLabel = (minutes: number) => {
+      return minutes < 60 ? `${minutes}m` : `${minutes / 60}h`;
+    };
+
+    const handleIntervalSelect = (minutes: number) => {
+      setSelectedInterval(minutes);
+      setCustomInterval('');
+    };
+
+    return (
+      <View style={styles.intervalSliderContainer}>
+        {/* Interval Labels */}
+        <View style={styles.intervalLabelsContainer}>
+          {PREDEFINED_INTERVALS.map((minutes) => (
+            <TouchableOpacity 
+              key={minutes} 
+              style={styles.intervalLabelWrapper}
+              onPress={() => handleIntervalSelect(minutes)}
+              activeOpacity={0.7}
+            >
+              <Paragraph style={[
+                styles.intervalLabel,
+                selectedInterval === minutes && !customInterval && styles.activeIntervalLabel
+              ]}>
+                {getIntervalLabel(minutes)}
+              </Paragraph>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Slider Line with Points */}
+        <View style={styles.sliderTrack}>
+          <View style={styles.sliderLine} />
+          {/* Active line segment */}
+          {!customInterval && (
+            <View 
+              style={[
+                styles.sliderActiveLine,
+                {
+                  width: `${((PREDEFINED_INTERVALS.indexOf(selectedInterval) + 1) / PREDEFINED_INTERVALS.length) * 100}%`
+                }
+              ]} 
+            />
+          )}
+          {PREDEFINED_INTERVALS.map((minutes, index) => (
+            <TouchableOpacity
+              key={minutes}
+              style={[
+                styles.sliderPoint,
+                {
+                  left: `${(index / (PREDEFINED_INTERVALS.length - 1)) * 100}%`,
+                },
+                selectedInterval === minutes && !customInterval && styles.activeSliderPoint
+              ]}
+              onPress={() => handleIntervalSelect(minutes)}
+              activeOpacity={0.8}
+            >
+              <View style={[
+                styles.sliderPointInner,
+                selectedInterval === minutes && !customInterval && styles.activeSliderPointInner
+              ]} />
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Current Selection Display */}
+        <View style={styles.currentSelectionContainer}>
+          <Paragraph style={styles.currentSelectionText}>
+            {customInterval 
+              ? `Custom: ${customInterval} minutes` 
+              : `Selected: ${getIntervalLabel(selectedInterval)}`
+            }
+          </Paragraph>
+        </View>
+      </View>
+    );
+  };
 
   const renderHomeContent = () => (
     <ScrollView contentContainerStyle={{ padding: 16 }}>
@@ -355,31 +420,6 @@ This is a test message. Automatic updates will be sent every ${interval} minutes
               SMS messages are sent automatically in the background without opening the SMS app.
             </Paragraph>
           )}
-        </Card.Content>
-      </Card>
-
-      {/* Information Card */}
-      <Card style={{ 
-        marginBottom: 24, 
-        backgroundColor: '#f0f9ff', 
-        borderWidth: 1.5, 
-        borderColor: '#0ea5e9', 
-        borderRadius: 18,
-        elevation: 3,
-        shadowColor: '#0ea5e9',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8
-      }}>
-        <Card.Content>
-          <Title style={{ color: '#0ea5e9', fontWeight: '700', fontSize: 18 }}>📱 Automatic SMS Feature</Title>
-          <Paragraph style={{ fontSize: 13, lineHeight: 18 }}>
-            • SMS messages are sent automatically without user interaction{'\n'}
-            • Messages include Google Maps links for easy location viewing{'\n'}
-            • Works completely in the background when app is closed{'\n'}
-            • Test SMS available before starting tracking{'\n'}
-            • Requires SMS permissions on Android devices
-          </Paragraph>
         </Card.Content>
       </Card>
 
@@ -416,19 +456,24 @@ This is a test message. Automatic updates will be sent every ${interval} minutes
           <Title style={styles.sectionTitle}>Update Interval</Title>
           <Paragraph>Choose how often to send location updates:</Paragraph>
           
-          <View style={styles.intervalButtons}>
-            {PREDEFINED_INTERVALS.map(renderIntervalButton)}
-          </View>
+          {renderIntervalSlider()}
 
-          <TextInput
-            style={styles.customIntervalInput}
-            mode="outlined"
-            label="Custom interval (minutes)"
-            value={customInterval}
-            onChangeText={setCustomInterval}
-            keyboardType="numeric"
-            placeholder="Enter custom minutes"
-          />
+          <View style={styles.customIntervalContainer}>
+            <Title style={styles.customIntervalTitle}>Or set custom interval:</Title>
+            <TextInput
+              style={styles.customIntervalInput}
+              mode="outlined"
+              label="Custom interval (minutes)"
+              value={customInterval}
+              onChangeText={(value) => {
+                setCustomInterval(value);
+                // Don't clear selectedInterval immediately to maintain visual state
+              }}
+              keyboardType="numeric"
+              placeholder="e.g., 45"
+              right={customInterval ? <TextInput.Icon icon="close" onPress={() => setCustomInterval('')} /> : undefined}
+            />
+          </View>
         </Card.Content>
       </Card>
 
